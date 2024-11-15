@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <!-- Flash Message Section at the Top of the Page  using jinja code for this -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+
+     
+    <div class="container">
+        <div class="form-container">
+            <h2>ATM PIN</h2>
+            <form id="loginForm" class="form" method="post" action="/login">
+                
+                
+                
+                
+                <input type="text" id="pin" placeholder="Enter Your Pin"  name="pin" required>
+                
+                <button type="submit">Submit</button>
+            </form>
+            <p class="register-link">
+                Don’t have a pin? <a href="{{ url_for('register') }}">Generate a pin</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
