@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 # MongoDB setup
 
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient("your connection string")
 db = client["atm_database"]
 users_collection = db["atm_login"]
 
