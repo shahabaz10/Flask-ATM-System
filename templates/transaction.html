@@ -8,38 +8,40 @@
 </head>
 <body>
     <div class="container">
-      
-        <h2>Choose a Transaction</h2>
-        <form method="POST" action="{{ url_for('transaction') }}">
-            <label for="transaction">Select Transaction Type:</label>
-            <select id="transaction" name="transaction" onchange="toggleAmountInput()" required>
-                <option value="balance"></option>
-                <option value="balance">Balance Enquiry</option>
-                <option value="deposit">Deposit</option>
-                <option value="withdraw">Withdraw</option>
-                <option value="pin_generation">PIN Generation</option>
-            </select>
-
-            <!-- Amount input field, shown only for Deposit and Withdraw -->
+        <h2>Select one option</h2>
+        <div class="transaction-options">
+            <div class="box" onclick="navigateTo('balance')">Balance Enquiry</div>
+            <div class="box" onclick="navigateTo('deposit')">Deposit</div>
+            <div class="box" onclick="navigateTo('withdraw')">Withdraw</div>
+            <div class="box" onclick="navigateTo('change')">Change PIN</div>
+        </div>
+        <form id="transactionForm" method="POST" action="{{ url_for('transaction') }}">
+            <input type="hidden" id="transactionType" name="transaction" value="">
             <div id="amountField" style="display: none;">
                 <label for="amount">Amount:</label>
                 <input type="number" id="amount" name="amount" placeholder="Enter Amount" step="1">
             </div>
-
-            <button type="submit">Submit</button>
         </form>
     </div>
 
     <script>
-        function toggleAmountInput() {
-            const transactionType = document.getElementById("transaction").value;
-            const amountField = document.getElementById("amountField");
+        function navigateTo(transactionType) {
+            const form = document.getElementById('transactionForm');
+            const transactionInput = document.getElementById('transactionType');
+            const amountField = document.getElementById('amountField');
+            
+            transactionInput.value = transactionType;
 
-            // Show the amount field only if transaction type is Deposit or Withdraw
-            if (transactionType === "deposit" || transactionType === "withdraw") {
-                amountField.style.display = "block";
+            // Show the amount field only for Deposit and Withdraw
+            if (transactionType === 'deposit' || transactionType === 'withdraw') {
+                amountField.style.display = 'block';
             } else {
-                amountField.style.display = "none";
+                amountField.style.display = 'none';
+            }
+
+            // Automatically submit the form for Balance Enquiry or PIN Generation
+            if (transactionType === 'balance' || transactionType === 'change') {
+                form.submit();
             }
         }
     </script>

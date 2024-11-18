@@ -1,50 +1,35 @@
-from flask import Flask, render_template, request, redirect, flash, session,Response
+from flask import Flask, render_template, request, redirect, flash, session
 from pymongo import MongoClient
-
-
+from bson import ObjectId
 
 
 app = Flask(__name__)
 
 # MongoDB setup
-
-client = MongoClient("your connection string")
+client = MongoClient("localhost:27017")
 db = client["atm_database"]
 users_collection = db["atm_login"]
 
-
-
-
-# main route also login route
-
+# Main route (Login)
 @app.route('/')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        
-        pin = request.form['pin']  
-        
-        # Searching for the user id from the mongo db data base uisng find_one mehtod (only finding the preticular document from the db)
-
+        pin = request.form['pin']
         user = users_collection.find_one({"pin": pin})
         
         if user:
-            #using session
-
-            session['pin'] = str(user['_id'])  # Store the user_id in the session
-          
-            return redirect('/transaction') 
+            session['pin'] = str(user['_id'])  # Store user ID in session
+            return redirect('/transaction')
         else:
-           
-
-            flash("Invalid username or ID. Please try again.", "error")
+            flash("Invalid PIN. Please try again.", "error")
             return redirect('/login')
     
     return render_template('login.html')
 
 
-# route for the register 
-
+# Register route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -52,49 +37,36 @@ def register():
         pin = request.form.get('pin')
         confirm_pin = request.form.get('confirm_pin')
 
-        # Check if the PIN and confirmation PIN match
         if pin != confirm_pin:
             flash("PINs do not match. Please try again.", "error")
             return redirect('/register')
-        
-       
-
-        # Create a new user document
 
         new_user = {
             "name": name,
             "pin": pin,
-            
         }
 
-        # Insert into MongoDB
-
         try:
-            users_collection.insert_one(new_user)  #insertng one document to the mongo db
+            users_collection.insert_one(new_user)
             flash("Registration successful!", "success")
             return redirect('/login')
         except Exception as e:
             flash("An error occurred during registration.", "error")
             print(e)
             return redirect('/register')
-    
+
     return render_template('register.html')
 
-
-
- # route for transaction 
-
-
+# Initialize the balance variable
 balance = 1000
 
+# Transaction route (for deposit, withdraw, balance check, and change PIN)
 @app.route('/transaction', methods=['GET', 'POST'])
 def transaction():
-    global balance
+    global balance  # Declare balance as a global variable
     if request.method == 'POST':
         transaction_type = request.form.get('transaction')
         amount_str = request.form.get('amount', '0')  
-        
-        # Check if the amount field is not empty, then convert it to a float
         amount = float(amount_str) if amount_str else 0.0
 
         if transaction_type == 'balance':
@@ -110,26 +82,59 @@ def transaction():
             else:
                 flash('Insufficient balance!', 'error')
             return redirect('/balance')
-        elif transaction_type == 'pin_generation':
-            return redirect('/register')
-    
+        elif transaction_type == 'change':
+            return redirect('/change')  # Redirect to change PIN page
+
     return render_template('transaction.html')
 
-
-#route for balance 
-
+# Balance route (check balance)
 @app.route('/balance')
 def balance_page():
-    global balance
+    global balance  # Declare balance as a global variable
     return render_template('balance.html', balance=balance)
 
-    
+# Change PIN route (add this route)
 
+@app.route('/change', methods=['GET', 'POST'])
+def change():
+    if request.method == 'POST':
+        # Debugging to see if the form data is being received
+        print(f"Form data received: {request.form}")  # Debugging line
 
+        current_pin = request.form['current_pin']
+        new_pin = request.form['new_pin']
+        confirm_new_pin = request.form['confirm_new_pin']
 
+        # Retrieve user info from MongoDB
+        user_id = session.get('pin')
+        if not user_id:
+            flash("You need to log in first.", "error")
+            return redirect('/login')
 
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+
+        if not user:
+            flash("User not found.", "error")
+            return redirect('/login')
+
+        # Check if current PIN matches
+        if user['pin'] != current_pin:
+            flash("Current PIN is incorrect.", "error")
+            return render_template('change_pin.html')
+
+        # Check if the new PIN and confirm PIN match
+        if new_pin != confirm_new_pin:
+            flash("New PINs do not match.", "error")
+            return render_template('change.html')
+
+        # Update the PIN in MongoDB
+        users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"pin": new_pin}})
+        flash("PIN successfully changed.", "success")
+        return redirect('/transaction')
+
+    return render_template('change.html')
 
 
 if __name__ == '__main__':
-    app.secret_key = 'admin123'
+    app.secret_key = 'admin123'  # Ensure this key is set
     app.run(debug=True)
